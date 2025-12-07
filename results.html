@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Election Results | BallotIQ</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/style.css">
+
+    <style>
+        .results-container {
+            max-width: 800px;
+            margin: 100px auto 50px;
+            padding: 2rem;
+            min-height: 80vh;
+            text-align: center;
+        }
+
+        .status-box {
+            background: var(--bg-secondary);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 3rem;
+            margin-bottom: 3rem;
+        }
+
+        .pending-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 0.5;
+            }
+
+            50% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0.5;
+            }
+        }
+
+        .result-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .vote-bar-bg {
+            background: rgba(255, 255, 255, 0.1);
+            height: 10px;
+            border-radius: 5px;
+            width: 100%;
+            margin-top: 0.5rem;
+            overflow: hidden;
+        }
+
+        .vote-bar-fill {
+            height: 100%;
+            background: var(--accent-cyan);
+            border-radius: 5px;
+            width: 0%;
+            transition: width 1s ease-out;
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav class="navbar" style="position: absolute; width: 100%;">
+        <div class="logo">BALLOT<span class="highlight">IQ</span></div>
+        <div>
+            <a href="index.html" style="color: var(--text-main); text-decoration: none; margin-right: 1.5rem;">Home</a>
+            <a href="login.html" class="btn-primary" style="padding: 0.5rem 1.5rem;">Login</a>
+        </div>
+    </nav>
+
+    <div class="results-container">
+        <h1 style="font-size: 3rem; margin-bottom: 1rem;">Election Results</h1>
+        <p style="color: var(--text-muted); margin-bottom: 3rem;">Official Tally from the Blockchain</p>
+
+        <div id="statusContainer" class="status-box">
+            <div class="pending-icon">⏳</div>
+            <h2>Results Pending</h2>
+            <p style="color: var(--text-muted); margin-top: 1rem;">The election results have not been published by the
+                administration yet. Please check back later.</p>
+        </div>
+
+        <div id="resultsList" style="display: none; text-align: left;">
+            <!-- Populated by JS -->
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script>
+        // Check results on load
+        loadResults();
+
+        async function loadResults() {
+            const statusContainer = document.getElementById('statusContainer');
+            const resultsList = document.getElementById('resultsList');
+
+            try {
+                const data = await api.getResults();
+
+                if (!data.published) {
+                    // Not published
+                    statusContainer.style.display = 'block';
+                    resultsList.style.display = 'none';
+                } else {
+                    // Published
+                    statusContainer.style.display = 'none';
+                    resultsList.style.display = 'block';
+
+                    // Calculate total for percentages
+                    const totalVotes = data.results.reduce((sum, c) => sum + c.votes, 0);
+
+                    // Sort by votes descending
+                    const sortedResults = data.results.sort((a, b) => b.votes - a.votes);
+
+                    let html = '';
+                    sortedResults.forEach(c => {
+                        const percent = totalVotes === 0 ? 0 : Math.round((c.votes / totalVotes) * 100);
+                        html += `
+                            <div class="result-card">
+                                <div style="flex-grow: 1; padding-right: 1rem;">
+                                    <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                                        <h3 style="margin: 0;">${escapeHtml(c.name)}</h3>
+                                        <span style="font-weight: bold; font-size: 1.2rem; color: var(--accent-cyan);">${c.votes} Votes</span>
+                                    </div>
+                                    <div style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.5rem;">${escapeHtml(c.party)}</div>
+                                    
+                                    <div class="vote-bar-bg">
+                                        <div class="vote-bar-fill" style="width: ${percent}%"></div>
+                                    </div>
+                                    <div style="text-align: right; font-size: 0.8rem; color: var(--text-muted); margin-top: 0.3rem;">${percent}%</div>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    resultsList.innerHTML = html;
+                }
+            } catch (err) {
+                console.error("Error fetching results", err);
+            }
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+
+</html>

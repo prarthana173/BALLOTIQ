@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voting Dashboard | BallotIQ</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/style.css">
+
+    <style>
+        .dashboard-container {
+            max-width: 1000px;
+            margin: 100px auto 50px;
+            padding: 2rem;
+            min-height: 80vh;
+        }
+
+        .welcome-banner {
+            background: linear-gradient(135deg, rgba(0, 245, 255, 0.1), rgba(11, 16, 38, 0.8));
+            border: 1px solid var(--glass-border);
+            padding: 2rem;
+            border-radius: 20px;
+            margin-bottom: 3rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .welcome-text h2 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-main);
+        }
+
+        .welcome-text p {
+            color: var(--accent-cyan);
+            font-weight: 500;
+        }
+
+        .candidates-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+        }
+
+        .candidate-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .candidate-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent-cyan);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .candidate-symbol {
+            font-size: 4rem;
+            margin-bottom: 0.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            width: 80px;
+            height: 80px;
+            line-height: 80px;
+            border-radius: 50%;
+            margin: 0 auto 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .candidate-id-badge {
+            display: inline-block;
+            background: rgba(0, 245, 255, 0.1);
+            color: var(--accent-cyan);
+            padding: 0.2rem 0.8rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-family: monospace;
+            margin-bottom: 0.5rem;
+            border: 1px solid rgba(0, 245, 255, 0.2);
+        }
+
+        .candidate-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 0.2rem;
+        }
+
+        .candidate-party {
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-vote {
+            background: transparent;
+            border: 1px solid var(--accent-cyan);
+            color: var(--accent-cyan);
+            padding: 0.8rem 2.5rem;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s;
+            width: 100%;
+        }
+
+        .btn-vote:hover {
+            background: var(--accent-cyan);
+            color: var(--bg-dark);
+            box-shadow: 0 0 15px rgba(0, 245, 255, 0.4);
+        }
+
+        .btn-vote:disabled {
+            border-color: var(--text-muted);
+            color: var(--text-muted);
+            cursor: not-allowed;
+            background: transparent;
+            box-shadow: none;
+            opacity: 0.5;
+        }
+
+        /* Vote Confirmation Modal */
+        .vote-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .vote-modal.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .vote-content {
+            background: var(--bg-secondary);
+            padding: 3rem;
+            border-radius: 20px;
+            text-align: center;
+            border: 1px solid var(--accent-cyan);
+            max-width: 500px;
+            width: 90%;
+            transform: scale(0.9);
+            transition: transform 0.3s;
+        }
+
+        .vote-modal.active .vote-content {
+            transform: scale(1);
+        }
+
+        .success-icon {
+            font-size: 4rem;
+            color: #4CAF50;
+            margin-bottom: 1.5rem;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.4rem 1rem;
+            background: rgba(0, 245, 255, 0.1);
+            border: 1px solid var(--accent-cyan);
+            color: var(--accent-cyan);
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Nav -->
+    <nav class="navbar" style="position: absolute; width: 100%;">
+        <div class="logo">BALLOT<span class="highlight">IQ</span></div>
+        <div style="display: flex; gap: 1rem; align-items: center;">
+            <div class="status-badge">Authenticated</div>
+            <a href="index.html" class="close-btn"
+                style="text-decoration: none; font-size: 2rem; color: var(--text-muted); line-height: 1; margin-left: 1rem; transition: color 0.3s;">&times;</a>
+        </div>
+    </nav>
+
+    <div class="dashboard-container">
+        <div class="welcome-banner">
+            <div class="welcome-text">
+                <h2 id="userName">Welcome, Voter</h2>
+                <p>Register ID: <span id="userId">...</span></p>
+            </div>
+            <div>
+                <p style="text-align: right; color: var(--text-muted); font-size: 0.9rem;">Status</p>
+                <div style="color: #4CAF50; font-weight: 600;">● Eligible to Vote</div>
+            </div>
+        </div>
+
+        <h3 style="margin-bottom: 2rem; font-size: 1.5rem;">Official Ballot - Candidates</h3>
+
+        <div class="candidates-grid" id="voteCandidatesGrid">
+            <!-- Candidate cards will be loaded here by JavaScript -->
+        </div>
+        <p id="noCandidatesMsg" style="text-align: center; color: var(--text-muted); margin-top: 2rem; display: none;">
+            No candidates available for voting. Please contact support.
+        </p>
+    </div>
+    <p id="noCandidatesMsg" style="text-align: center; color: var(--text-muted); margin-top: 2rem; display: none;">
+        No candidates available for voting. Please contact support.
+    </p>
+
+    <!-- Manual Voting Section -->
+    <div style="margin-top: 4rem; padding-top: 2rem; border-top: 1px solid var(--glass-border);">
+        <h3 style="margin-bottom: 1rem; color: var(--text-muted);">Manual Voting Entry</h3>
+        <p style="margin-bottom: 1.5rem; font-size: 0.9rem; color: var(--text-muted);">
+            If you cannot find your candidate above, or prefer to enter details manually, use this form.
+        </p>
+
+        <div
+            style="background: var(--bg-secondary); padding: 2rem; border-radius: 16px; border: 1px solid var(--glass-border); max-width: 600px;">
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; color: var(--text-muted);">Candidate ID</label>
+                <input type="text" id="manualCandidateId" placeholder="Enter Candidate ID (e.g., 1JT24...)"
+                    style="width: 100%; padding: 1rem; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+            </div>
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; color: var(--text-muted);">Candidate Name</label>
+                <input type="text" id="manualCandidateName" placeholder="Enter Candidate Name"
+                    style="width: 100%; padding: 1rem; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+            </div>
+            <button onclick="castManualVote()" class="btn-vote" style="width: 100%;">Vote Manually</button>
+        </div>
+    </div>
+    </div>
+
+    <!-- Confirmation Step Modal -->
+    <div class="vote-modal" id="confirmModal">
+        <div class="vote-content">
+            <h2 style="margin-bottom: 0.5rem;">Confirm Your Vote</h2>
+            <p style="color: var(--text-muted); margin-bottom: 1rem;">You are about to cast your vote for:</p>
+
+            <div
+                style="background: rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--accent-cyan); margin-bottom: 2rem;">
+                <h3 id="confirmCandidateName" style="color: var(--accent-cyan); font-size: 1.5rem;">Candidate Name</h3>
+            </div>
+
+            <div style="display: flex; gap: 1rem; justify-content: center;">
+                <button onclick="closeConfirm()"
+                    style="background: transparent; border: 1px solid var(--text-muted); color: var(--text-muted); padding: 0.8rem 2rem; border-radius: 50px; cursor: pointer;">Cancel</button>
+                <button onclick="proceedVote()" class="btn-vote"
+                    style="width: auto; background: var(--accent-cyan); color: var(--bg-dark);">Confirm Vote</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div class="vote-modal" id="voteModal">
+        <div class="vote-content">
+            <div class="success-icon">✓</div>
+            <h2 style="margin-bottom: 1rem;">Vote Recorded!</h2>
+            <p style="color: var(--text-muted); margin-bottom: 2rem;">Your vote for <span id="votedFor"
+                    style="color: var(--text-main); font-weight: bold;"></span> has been successfully recorded on the
+                blockchain.</p>
+            <p style="font-size: 0.8rem; color: var(--accent-cyan); font-family: monospace;" id="blockHash">Block Hash:
+                Fetching...</p>
+        </div>
+    </div>
+
+    <script src="js/api.js?v=2"></script>
+    <script>
+        let selectedCandidate = "";
+        let selectedCandidateId = "";
+        let currentUser = null;
+
+        // Load User Data & Candidates
+        window.onload = function () {
+
+
+            // 1. Load User
+            currentUser = JSON.parse(sessionStorage.getItem('ballotiq_current_user') || 'null');
+
+            if (currentUser) {
+                document.getElementById('userName').textContent = "Welcome, " + currentUser.fullname;
+                document.getElementById('userId').textContent = currentUser.voterid;
+
+                // 2. Check Results Status First
+                checkResultsPublished();
+            } else {
+                // Return to login if no session
+                window.location.href = 'login.html';
+            }
+        };
+
+        // NEW: Check if results are published
+        async function checkResultsPublished() {
+            try {
+                // We try to get results. If published=false, it returns empty results.
+                const response = await api.getResults();
+
+                if (response.published) {
+                    displayResultsView(response.results);
+                } else {
+                    // Proceed to Voting View
+                    checkVoteStatus(currentUser.voterid);
+                    loadVoteCandidates();
+                }
+            } catch (err) {
+                console.error("Error checking results:", err);
+                // Fallback to voting view if error
+                checkVoteStatus(currentUser.voterid);
+                loadVoteCandidates();
+            }
+        }
+
+        function displayResultsView(results) {
+            const container = document.querySelector('.dashboard-container');
+            const banner = document.querySelector('.welcome-banner');
+
+            // 1. Determine Winner
+            if (!results || results.length === 0) {
+                container.innerHTML = "<h2>Voting Closed</h2><p>No votes cast.</p>";
+                return;
+            }
+
+            // Sort by votes descending
+            results.sort((a, b) => b.votes - a.votes);
+            const winner = results[0];
+            const runnerUp = results.length > 1 ? results[1] : { votes: 0 };
+            // Use "WON BY" per user request, assuming they mean with X votes
+            let winMsg = `RESULTS : ${escapeHtml(winner.name).toUpperCase()} WON BY ${winner.votes} VOTES`;
+
+            // 3. Replace Content
+            // Keep banner, hide rest
+            const grid = document.getElementById('voteCandidatesGrid');
+            const manualSection = document.querySelector('div[style*="margin-top: 4rem"]');
+            const header = document.querySelector('h3'); // "Official Ballot - Candidates"
+            const statusDiv = document.querySelector('.welcome-banner div:last-child'); // Status checking part
+
+            if (grid) grid.style.display = 'none';
+            if (manualSection) manualSection.style.display = 'none';
+            if (header) header.style.display = 'none';
+            document.getElementById('noCandidatesMsg').style.display = 'none';
+
+            // Update Status in Banner
+            if (statusDiv) {
+                statusDiv.innerHTML = '<div style="color: #FF5252; font-weight: 600; font-size: 1.2rem;">● VOTING CLOSED</div>';
+            }
+
+            // Insert Result Message
+            const msgDiv = document.createElement('div');
+            msgDiv.style.textAlign = 'center';
+            msgDiv.style.padding = '3rem';
+            msgDiv.style.marginTop = '2rem';
+            msgDiv.style.background = 'rgba(0, 255, 136, 0.1)';
+            msgDiv.style.border = '2px solid #00ff88';
+            msgDiv.style.borderRadius = '20px';
+            msgDiv.style.color = '#00ff88';
+
+            msgDiv.innerHTML = `
+                <h1 style="font-size: 3rem; margin-bottom: 1rem;">🏆</h1>
+                <h2 style="font-size: 2rem; margin-bottom: 0.5rem; text-transform: uppercase;">Voting Closed</h2>
+                <div style="font-size: 1.5rem; font-weight: bold; color: white; margin-top: 1rem;">
+                    ${winMsg}
+                </div>
+             `;
+
+            container.appendChild(msgDiv);
+        }
+
+        async function checkVoteStatus(voterId) {
+            const statusDiv = document.querySelector('.welcome-banner div:last-child');
+            // Show loading or checking...
+
+            const result = await api.getVoteStatus(voterId);
+
+            if (result.hasVoted) {
+                // Update UI: Show Voted
+                statusDiv.innerHTML = '<p style="text-align: right; color: var(--text-muted); font-size: 0.9rem;">Status</p><div style="color: #FFC107; font-weight: 600;">● Vote Cast</div>';
+
+                // Disable all buttons immediately if loaded
+                disableAllVoting();
+
+                // Also store persistent flag to disable buttons as they load
+                window.hasVotedFlag = true;
+            } else {
+                // Keep Eligible
+                window.hasVotedFlag = false;
+            }
+        }
+
+        function disableAllVoting() {
+            const btns = document.querySelectorAll('.btn-vote');
+            btns.forEach(b => {
+                b.disabled = true;
+                b.textContent = "Voted";
+            });
+        }
+
+        async function loadVoteCandidates() {
+            const grid = document.getElementById('voteCandidatesGrid');
+            const placeholder = document.getElementById('noCandidatesMsg');
+
+            grid.innerHTML = '';
+
+            const candidates = await api.getCandidates();
+
+            if (candidates.length === 0) {
+                if (placeholder) placeholder.style.display = 'block';
+                return;
+            }
+            if (placeholder) placeholder.style.display = 'none';
+
+            candidates.forEach(c => {
+                const card = document.createElement('div');
+                card.className = 'candidate-card';
+                // Show ID if exists, specific labeling as per request
+                let idHtml = c.candidateId ? `<div class="candidate-id-badge">${escapeHtml(c.candidateId)}</div>` : '';
+
+                const btnDisabled = window.hasVotedFlag ? 'disabled' : '';
+                const btnText = window.hasVotedFlag ? 'Voted' : 'Vote Now';
+
+                card.innerHTML = `
+                    <div class="candidate-symbol">⚡</div>
+                    ${idHtml}
+                    <div class="candidate-party">${escapeHtml(c.designation)}</div>
+                    <div class="candidate-name">${escapeHtml(c.name)}</div>
+                    <button class="btn-vote" ${btnDisabled} data-name="${escapeHtml(c.name)}" data-id="${escapeHtml(c.candidateId || '')}" onclick="handleClickVote(this)">${btnText}</button>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function handleClickVote(btn) {
+            const name = btn.getAttribute('data-name');
+            const id = btn.getAttribute('data-id');
+            castVote(name, id);
+        }
+
+        function castVote(candidateName, candidateId) {
+            selectedCandidate = candidateName;
+            selectedCandidateId = candidateId;
+            let displayName = candidateName;
+            if (candidateId) {
+                displayName += ` (${candidateId})`;
+            }
+            document.getElementById('confirmCandidateName').textContent = displayName;
+            document.getElementById('confirmModal').classList.add('active');
+        }
+
+        function closeConfirm() {
+            document.getElementById('confirmModal').classList.remove('active');
+            selectedCandidate = "";
+            selectedCandidateId = "";
+        }
+
+        async function proceedVote() {
+            // Do not close confirm yet, we need the variables!
+
+            // Disable buttons
+            const btns = document.querySelectorAll('.btn-vote');
+            btns.forEach(b => b.disabled = true);
+
+            if (!currentUser || !currentUser.voterid) {
+                alert("Error: Your session is invalid or missing Voter ID. Please Logout and Login again.");
+                btns.forEach(b => b.disabled = false);
+                closeConfirm();
+                return;
+            }
+
+            if (!selectedCandidateId) {
+                alert("Error: No Candidate ID selected. Please try again.");
+                btns.forEach(b => b.disabled = false);
+                closeConfirm();
+                return;
+            }
+
+            // API Call
+            const voteData = {
+                voterId: currentUser.voterid,
+                candidateId: selectedCandidateId,
+                candidateName: selectedCandidate
+            };
+
+            // Now close the modal logic
+            document.getElementById('confirmModal').classList.remove('active');
+            // We kept the variables for the API call above, now we can conceptually 'clear' them 
+            // but we actually need them for the voteData constructed above.
+            // Resetting global vars is fine now.
+            selectedCandidate = "";
+            selectedCandidateId = "";
+
+            console.log("Sending Vote:", voteData); // Debug log for browser console
+
+            const result = await api.vote(voteData);
+
+            if (result.success) {
+                // Show success confirmation
+                const modal = document.getElementById('voteModal');
+                document.getElementById('votedFor').textContent = selectedCandidate;
+                document.getElementById('blockHash').textContent = 'Block Hash: ' + result.block.hash;
+                modal.classList.add('active');
+
+                // Redirect
+                setTimeout(() => {
+                    window.location.href = 'vote-success.html';
+                }, 4000);
+            } else {
+                alert("Voting Failed: " + (result.error || "Unknown Error"));
+                // Re-enable buttons
+                btns.forEach(b => b.disabled = false);
+            }
+        }
+
+        async function castManualVote() {
+            const manualId = document.getElementById('manualCandidateId').value.trim();
+            const manualName = document.getElementById('manualCandidateName').value.trim();
+
+            if (!manualId || !manualName) {
+                alert("Please enter both Candidate ID and Candidate Name.");
+                return;
+            }
+
+            if (window.hasVotedFlag) {
+                alert("You have already voted!");
+                return;
+            }
+
+            // reuse existing logic
+            castVote(manualName, manualId);
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+
+</html>

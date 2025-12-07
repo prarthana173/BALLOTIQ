@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | BallotIQ</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/style.css">
+
+    <style>
+        .admin-container {
+            max-width: 1200px;
+            margin: 100px auto 50px;
+            padding: 2rem;
+            min-height: 80vh;
+        }
+
+        .section-header {
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .section-header h2 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Form Section */
+        .add-candidate-section {
+            background: var(--bg-secondary);
+            padding: 2.5rem;
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+            margin-bottom: 4rem;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            color: var(--text-main);
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            border-color: var(--accent-cyan);
+            outline: none;
+        }
+
+        /* Candidates Grid removed, replaced by table styles which are inline or global */
+    </style>
+
+    <script>
+        // ADMIN AUTH CHECK
+        if (sessionStorage.getItem('ballotiq_role') !== 'admin') {
+            window.location.href = 'login.html?error=access_denied';
+        }
+    </script>
+</head>
+
+<body>
+
+    <nav class="navbar" style="position: absolute; width: 100%;">
+        <div class="logo">BALLOT<span class="highlight">IQ</span></div>
+        <div style="display: flex; gap: 1rem; align-items: center;">
+            <div class="status-badge"
+                style="border-color: #ffbb00; color: #ffbb00; background: rgba(255, 187, 0, 0.1);">Admin Mode</div>
+            <a href="index.html" class="close-btn"
+                style="text-decoration: none; font-size: 2rem; color: var(--text-muted); line-height: 1; margin-left: 1rem;">&times;</a>
+        </div>
+    </nav>
+
+    <div class="admin-container">
+
+        <!-- Section 1: Registered Users -->
+        <div class="section-header">
+            <h2>Registered Users</h2>
+            <p style="color: var(--text-muted);">View and manage all registered voters.</p>
+        </div>
+
+        <div
+            style="background: var(--bg-secondary); border: 1px solid var(--glass-border); border-radius: 16px; overflow: hidden; margin-bottom: 5rem;">
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; min-width: 600px;">
+                    <thead>
+                        <tr style="background: rgba(255,255,255,0.05); text-align: left;">
+                            <th style="padding: 1rem; color: var(--text-muted); font-weight: 500;">Full Name</th>
+                            <th style="padding: 1rem; color: var(--text-muted); font-weight: 500;">Voter ID</th>
+                            <th style="padding: 1rem; color: var(--text-muted); font-weight: 500;">Email</th>
+                            <th style="padding: 1rem; color: var(--text-muted); font-weight: 500;">Phone</th>
+                            <th style="padding: 1rem; color: var(--text-muted); font-weight: 500;">Reg. Date</th>
+                            <th style="padding: 1rem; color: var(--text-muted); font-weight: 500;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+            <div id="noUsersMsg" style="padding: 2rem; text-align: center; color: var(--text-muted); display: none;">No
+                registered users found.</div>
+        </div>
+
+        <!-- Section 2: Manage Candidates -->
+        <div class="section-header">
+            <h2>Ballot Candidates</h2>
+            <p style="color: var(--text-muted);">Add new candidates to the blockchain ballot system.</p>
+        </div>
+
+        <!-- Results Control -->
+        <div
+            style="margin-bottom: 2rem; background: rgba(255, 255, 255, 0.05); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--glass-border);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h3 style="margin-bottom: 0.5rem;">Results Publication</h3>
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">Current Status: <span id="pubStatus"
+                            style="font-weight: bold; color: var(--accent-cyan);">Pending...</span></p>
+                </div>
+                <div>
+                    <button id="btnUnpublish" onclick="toggleResults(false)"
+                        style="display: none; background: transparent; border: 1px solid #FF5252; color: #FF5252; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer;">Unpublish</button>
+                    <button id="btnPublish" onclick="toggleResults(true)"
+                        style="display: none; background: var(--accent-cyan); color: var(--bg-dark); border: none; padding: 0.5rem 1.5rem; border-radius: 6px; cursor: pointer; font-weight: 600;">Publish
+                        Results</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Candidate Form -->
+        <div class="add-candidate-section">
+            <form id="addCandidateForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="candidateId">Candidate ID (Credential)</label>
+                        <input type="text" id="candidateId" placeholder="e.g. C-101" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="candidateName">Candidate Name</label>
+                        <input type="text" id="candidateName" placeholder="e.g. Jane Doe" required>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom: 2rem;">
+                    <label for="designation">Party / Designation</label>
+                    <input type="text" id="designation" placeholder="e.g. Democratic Party / President" required>
+                </div>
+
+                <button type="submit" class="btn-primary btn-block">Add Candidate</button>
+            </form>
+        </div>
+
+        <!-- Candidates List Table -->
+        <div
+            style="background: var(--bg-secondary); border: 1px solid var(--glass-border); border-radius: 16px; overflow: hidden; margin-bottom: 5rem;">
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; min-width: 600px;">
+                    <thead>
+                        <tr style="background: rgba(255,255,255,0.05); text-align: left;">
+                            <th style="padding: 1rem; color: var(--text-muted); font-weight: 500;">Candidate ID</th>
+                            <th style="padding: 1rem; color: var(--text-muted); font-weight: 500;">Name</th>
+                            <th style="padding: 1rem; color: var(--text-muted); font-weight: 500;">Party / Designation
+                            </th>
+                            <th style="padding: 1rem; color: var(--text-muted); font-weight: 500;">Votes (Live)</th>
+                            <th style="padding: 1rem; color: var(--text-muted); font-weight: 500;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="candidatesTableBody">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div id="noCandidatesMsg" style="padding: 2rem; text-align: center; color: var(--text-muted); display: none;">
+            No candidates added yet.</div>
+    </div>
+    </div>
+
+    <script src="js/api.js?v=2"></script>
+    <script>
+        const form = document.getElementById('addCandidateForm');
+        const candidatesTableBody = document.getElementById('candidatesTableBody');
+        const noCandidatesMsg = document.getElementById('noCandidatesMsg');
+        const usersTableBody = document.getElementById('usersTableBody');
+        const noUsersMsg = document.getElementById('noUsersMsg');
+
+        // Initial Loads
+        // checkEmpty(); // Removed separate checkEmpty, handled in load functions
+        loadRegisteredUsers();
+        loadCandidates();
+
+        // ------------------------------------------
+        // Registered Users Logic (API)
+        // ------------------------------------------
+        async function loadRegisteredUsers() {
+            usersTableBody.innerHTML = ''; // clear
+
+            try {
+                const users = await api.getUsers();
+
+                if (users.length === 0) {
+                    noUsersMsg.style.display = 'block';
+                    return;
+                }
+
+                noUsersMsg.style.display = 'none';
+
+                users.forEach(user => {
+                    const row = document.createElement('tr');
+                    row.style.borderBottom = '1px solid var(--glass-border)';
+
+                    // Status Badge Logic
+                    let statusBadge = '<span style="display: inline-block; padding: 0.2rem 0.6rem; border-radius: 50px; font-size: 0.75rem; background: rgba(76, 175, 80, 0.1); color: #4CAF50; border: 1px solid #4CAF50;">Verified</span>';
+
+                    if (user.loginStatus === 'Logged In') {
+                        statusBadge = '<span style="display: inline-block; padding: 0.2rem 0.6rem; border-radius: 50px; font-size: 0.75rem; background: rgba(0, 255, 136, 0.2); color: #00ff88; border: 1px solid #00ff88; box-shadow: 0 0 10px rgba(0, 255, 136, 0.2);">Logged In</span>';
+                    }
+
+                    // Row HTML
+                    row.innerHTML = `
+                            <td style="padding: 1rem;">${escapeHtml(user.fullname)}</td>
+                            <td style="padding: 1rem; color: var(--accent-cyan); font-family: monospace;">${escapeHtml(user.voterid)}</td>
+                            <td style="padding: 1rem;">${escapeHtml(user.email)}</td>
+                            <td style="padding: 1rem;">${escapeHtml(user.phone || 'N/A')}</td>
+                            <td style="padding: 1rem; font-size: 0.9rem; color: var(--text-muted);">${escapeHtml(user.registrationDate || 'N/A')}</td>
+                            <td style="padding: 1rem;">
+                                ${statusBadge}
+                            </td>
+                        `;
+                    usersTableBody.appendChild(row);
+                });
+            } catch (err) {
+                console.error("Error loading users:", err);
+                noUsersMsg.textContent = "Error loading users from server.";
+                noUsersMsg.style.display = 'block';
+            }
+        }
+
+        // ------------------------------------------
+        // Candidates Logic (API)
+        // ------------------------------------------
+        async function loadCandidates() {
+            candidatesTableBody.innerHTML = ''; // clear
+
+            try {
+                const candidates = await api.getCandidates();
+                const resultsResponse = await api.getResults(true); // isAdmin = true
+
+                if (candidates.length === 0) {
+                    noCandidatesMsg.style.display = 'block';
+                    return;
+                }
+                noCandidatesMsg.style.display = 'none';
+
+                // Map votes to candidates
+                const voteMap = {};
+                if (resultsResponse && resultsResponse.results) {
+                    resultsResponse.results.forEach(r => {
+                        voteMap[r.id] = r.votes;
+                    });
+                }
+
+                // Load all candidates into table (Newest first)
+                const candidatesWithVotes = candidates.map(c => ({
+                    ...c,
+                    votes: voteMap[c.candidateId] || 0
+                }));
+
+                [...candidatesWithVotes].reverse().forEach(c => addCandidateToTable(c));
+            } catch (err) {
+                console.error("Error loading candidates:", err);
+            }
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const idStr = document.getElementById('candidateId').value;
+            const name = document.getElementById('candidateName').value;
+            const designation = document.getElementById('designation').value;
+
+            const candidateData = {
+                candidateId: idStr,
+                name: name,
+                designation: designation
+            };
+
+            const result = await api.addCandidate(candidateData);
+
+            if (result.success) {
+                loadCandidates(); // Reload table
+                form.reset();
+            } else {
+                alert('Error adding candidate: ' + (result.error || 'Unknown error'));
+            }
+        });
+
+        function addCandidateToTable(candidate) {
+            const row = document.createElement('tr');
+            row.style.borderBottom = '1px solid var(--glass-border)';
+            row.setAttribute('data-id', candidate.id);
+
+            row.innerHTML = `
+                <td style="padding: 1rem; font-family: monospace; color: var(--accent-cyan);">${escapeHtml(candidate.candidateId)}</td>
+                <td style="padding: 1rem; font-weight: 500;">${escapeHtml(candidate.name)}</td>
+                <td style="padding: 1rem; color: var(--text-muted);">${escapeHtml(candidate.designation)}</td>
+                <td style="padding: 1rem; font-weight: bold; color: var(--accent-cyan); font-family: monospace;">
+                    ${candidate.votes !== undefined ? candidate.votes : '-'}
+                </td>
+                <td style="padding: 1rem;">
+                    <button class="btn-remove" style="padding: 0.4rem 1rem; font-size: 0.85rem;" onclick="removeCandidate(${candidate.id})">Remove</button>
+                </td>
+            `;
+
+            candidatesTableBody.appendChild(row);
+        }
+
+        async function removeCandidate(id) {
+            if (confirm('Are you sure you want to remove this candidate?')) {
+                const result = await api.removeCandidate(id);
+                if (result.success) {
+                    loadCandidates();
+                } else {
+                    alert('Failed to remove candidate');
+                }
+            }
+        }
+
+        // ------------------------------------------
+        // Results Logic
+        // ------------------------------------------
+        async function loadResultsStatus() {
+            const status = await api.getResultsStatus();
+            const pubStatus = document.getElementById('pubStatus');
+            const btnPublish = document.getElementById('btnPublish');
+            const btnUnpublish = document.getElementById('btnUnpublish');
+
+            if (status.published) {
+                pubStatus.textContent = "LIVE (Visible to Public)";
+                pubStatus.style.color = "#4CAF50";
+                btnPublish.style.display = 'none';
+                btnUnpublish.style.display = 'inline-block';
+            } else {
+                pubStatus.textContent = "Unpublished (Hidden)";
+                pubStatus.style.color = "#FF9800";
+                btnPublish.style.display = 'inline-block';
+                btnUnpublish.style.display = 'none';
+            }
+        }
+
+        async function toggleResults(shouldPublish) {
+            let result;
+            if (shouldPublish) {
+                if (!confirm("Are you sure you want to PUBLISH results? They will be visible to all users.")) return;
+                result = await api.publishResults();
+            } else {
+                if (!confirm("Are you sure you want to HIDE results?")) return;
+                result = await api.unpublishResults();
+            }
+
+            if (result.success) {
+                loadResultsStatus();
+            } else {
+                alert("Action failed: " + (result.error || "Unknown error"));
+            }
+        }
+
+        // Initialize Results
+        loadResultsStatus();
+
+        // Security Helper
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+
+</html>

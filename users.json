@@ -1,0 +1,28 @@
+[
+  {
+    "fullname": "Prarthana",
+    "voterid": "12345",
+    "age": "19",
+    "phone": "1234567890",
+    "email": "prarthi@gmail.com",
+    "password": "prarthi123",
+    "role": "user",
+    "registrationDate": "7/12/2025, 9:18:40 pm",
+    "status": "Verified",
+    "loginStatus": "Logged In",
+    "lastLoginTime": "8/12/2025, 12:36:47 am"
+  },
+  {
+    "fullname": "Shaarvari",
+    "voterid": "123456",
+    "age": "20",
+    "phone": "9987654321",
+    "email": "shaari@gmail.com",
+    "password": "shaari123",
+    "role": "user",
+    "registrationDate": "8/12/2025, 12:24:46 am",
+    "status": "Verified",
+    "loginStatus": "Logged In",
+    "lastLoginTime": "8/12/2025, 12:25:22 am"
+  }
+]

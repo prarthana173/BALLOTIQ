@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | BallotIQ</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/style.css">
+
+    <style>
+        /* Specific page overrides to reuse register layout logic */
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: var(--bg-dark);
+            background-image: radial-gradient(circle at 10% 20%, rgba(0, 245, 255, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(75, 110, 153, 0.05) 0%, transparent 40%);
+        }
+
+        /* Simulating the same container style */
+        .login-container {
+            background: var(--bg-secondary);
+            padding: 3rem;
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+            width: 450px;
+            /* Slightly narrower than register */
+            max-width: 90%;
+            position: relative;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Specific spacing request */
+        .btn-block {
+            margin-top: 2.5rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="login-container">
+        <a href="index.html" class="close-btn">&times;</a>
+
+        <div class="reg-header">
+            <a href="index.html" class="logo-small">BALLOT<span class="highlight">IQ</span></a>
+            <h2>Welcome Back</h2>
+            <p>Secure Voting Access</p>
+        </div>
+
+        <form id="loginForm" class="auth-form">
+            <div class="form-group">
+                <label for="identifier">Voter ID or Email</label>
+                <input type="text" id="identifier" name="identifier" placeholder="Enter Voter ID or Email" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <div class="password-group">
+                    <input type="password" id="password" name="password" placeholder="••••••••" required>
+                    <button type="button" id="togglePassword" class="toggle-password">
+                        <!-- Eye Icon -->
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                    </button>
+                </div>
+                <span class="error-msg" id="loginError">Invalid username or password.</span>
+            </div>
+
+            <button type="submit" class="btn-primary btn-block">Login</button>
+        </form>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script>
+        const form = document.getElementById('loginForm');
+        const loginError = document.getElementById('loginError');
+        const identifierInput = document.getElementById('identifier');
+        const passwordInput = document.getElementById('password');
+
+        // Check for URL params for errors (e.g. Access Denied)
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('error') === 'access_denied') {
+            loginError.textContent = 'Access denied — Admin only.';
+            loginError.style.display = 'block';
+        } else {
+            loginError.style.display = 'none';
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const identifier = identifierInput.value.trim();
+            const password = passwordInput.value;
+
+            try {
+                const result = await api.login({ identifier, password });
+
+                if (result.success) {
+                    // Set Session
+                    sessionStorage.setItem('ballotiq_role', result.user.role);
+                    sessionStorage.setItem('ballotiq_current_user', JSON.stringify(result.user));
+
+                    // Role-Based Redirect
+                    if (result.user.role === 'admin') {
+                        window.location.href = 'admin-candidates.html';
+                    } else {
+                        window.location.href = 'dashboard.html';
+                    }
+                } else {
+                    // Failure
+                    loginError.textContent = result.error || 'Invalid username or password.';
+                    loginError.style.display = 'block';
+                    identifierInput.parentElement.classList.add('has-error');
+                    const pwGroup = passwordInput.closest('.form-group');
+                    if (pwGroup) pwGroup.classList.add('has-error');
+                }
+            } catch (error) {
+                console.error('Login Error:', error);
+                loginError.textContent = 'Connection to server failed.';
+                loginError.style.display = 'block';
+            }
+        });
+
+        // Password Toggle Logic
+        const togglePasswordBtn = document.getElementById('togglePassword');
+        togglePasswordBtn.addEventListener('click', () => {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+
+            // Toggle Icon
+            if (type === 'text') {
+                togglePasswordBtn.innerHTML = `
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                        <line x1="1" y1="1" x2="23" y2="23"></line>
+                    </svg>
+                `;
+            } else {
+                togglePasswordBtn.innerHTML = `
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                `;
+            }
+        });
+
+        // Remove error on input for both fields to improve UX
+        [identifierInput, passwordInput].forEach(input => {
+            input.addEventListener('input', () => {
+                loginError.style.display = 'none';
+                identifierInput.parentElement.classList.remove('has-error');
+                const formGroup = input.closest('.form-group');
+                if (formGroup) formGroup.classList.remove('has-error');
+            });
+        });
+    </script>
+</body>
+
+</html>
